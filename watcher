@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from TwitterAPI import TwitterAPI, TwitterConnectionError
 from app.database import database
+from app.livefeed import pubsub
 import os, sys
 
 # Define API keys
@@ -20,6 +21,8 @@ debug = False
 if "DEBUG" in os.environ and int(os.environ["DEBUG"]):
     debug = True
 
+ps = pubsub.PubSub()
+
 db = database.Database(DBURI, debug)
 
 while True:
@@ -30,6 +33,7 @@ while True:
         for item in r:
             if item["coordinates"] is not None:
                 db.insert(item)
+                ps.publish(item)
             elif "disconnect" in item:
                 pass
 
