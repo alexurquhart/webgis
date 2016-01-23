@@ -69,7 +69,6 @@ class Division(Base):
         for coord in feature["geometry"]["coordinates"][0]:
             geom_list.append("{:.15f} {:.15f}".format(coord[0], coord[1]))
 
+        # Create the WKT string
         geom_text = ", ".join(geom_list)
-        
         self.geom = "SRID=4326;POLYGON((" + geom_text + "))"
-        
