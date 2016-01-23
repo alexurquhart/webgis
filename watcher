@@ -2,7 +2,7 @@
 from TwitterAPI import TwitterAPI, TwitterConnectionError
 from app.database import database
 from app.livefeed import pubsub
-import os, sys
+import os
 
 # Define API keys
 CONSUMER_KEY = os.environ["CONSUMER_KEY"]
@@ -38,5 +38,4 @@ while True:
                 pass
 
     except TwitterConnectionError as e:
-        # Connection error - retry request
-        pass
+        print "Connection Error!"
