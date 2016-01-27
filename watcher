@@ -32,7 +32,7 @@ while True:
 
         for item in r:
             if item["coordinates"] is not None:
-                db.insert(item)
+                db.insert_tweet(item)
                 ps.publish(item)
             elif "disconnect" in item:
                 pass

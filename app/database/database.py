@@ -44,9 +44,34 @@ class Database:
     def get_division(self, geom):
         div = self.__session.query(Division).filter(Division.geom.ST_Contains(geom)).first()
         return div
+        
+    # Takes a list of hashtag entities and places them appropriately into the database Tweet object
+    # First checks to see if the hashtag already exists, if so, then the existing name and ID is used
+    # and an entry will be placed in the association table
+    def extract_hashtags(self, hashtags, tweetClass):
+        # Convert hashtags to lowercase and remove duplicates
+        ht_text = set(map(lambda x: x["text"].lower(), hashtags))
+        
+        for ht in ht_text:
+            new_ht = self.__session.query(Hashtag).filter(Hashtag.text == ht).first()
+            if new_ht == None:
+                new_ht = Hashtag(text=ht)
+            tweetClass.hashtags.append(new_ht)
+    
+    # Extracts images out of the twitter media entities
+    def extract_twitter_images(self, media, tweetClass):
+        for img in media:
+            if img["type"] == "photo":
+                tweetClass.pictures.append(Picture(source="twitter", img_url=img["media_url_https"]))
+
+    # Extracts instagram image URL's out of the twitter URL entities
+    def extract_instagram_images(self, urls, tweetClass):
+        for url in urls:
+            if url["display_url"].startswith("instagram.com/p/"):
+                tweetClass.pictures.append(Picture(source="instagram", img_url=url["expanded_url"] + "media/"))
 
     # Takes a tweet object from the API and inserts it into the database
-    def insert(self, tweet):
+    def insert_tweet(self, tweet):
         session = self.__session
         
         coordinates = tweet["coordinates"]["coordinates"]
@@ -60,35 +85,23 @@ class Database:
             time=time,
             geom="SRID=4326;POINT({0} {1})".format(coordinates[0], coordinates[1]))
         
+        # If return if the point does not lie inside one of our divisions
         div = self.get_division(db_tweet.geom)
-        if div is not None:
-            db_tweet.division_id = div.id
+        if div == None:
+            return
+        db_tweet.division_id = div.id
 
-        # Add the tweet to the session
-        session.add(db_tweet)
-    
-        # Loop through hashtags
-        # If there isn't an instance of the hashtag already in the database
-        # then create a new one and insert. Otherwise use the one that exists
-        # Must also detect duplicate hashtags in the raw tweet and remove them
         if "hashtags" in tweet["entities"]:
-            for ht in tweet["entities"]["hashtags"]:
-                new_ht = session.query(Hashtag).filter(Hashtag.text == ht["text"].lower()).first()
-                if new_ht == None:
-                    new_ht = Hashtag(ht["text"])
-                db_tweet.hashtags.append(new_ht)
-                session.commit()
+            self.extract_hashtags(tweet["entities"]["hashtags"], db_tweet)
         
         # Insert any pictures from twitter
         if "media" in tweet["entities"]:
-            for media in tweet["entities"]["media"]:
-                if media["type"] == "photo":
-                    db_tweet.pictures.append(Picture(source="twitter", img_url=media["media_url_https"]))
-                
+            self.extract_twitter_images(tweet["entities"]["media"], db_tweet)
+
         # Extract instagram pictures
         if "urls" in tweet["entities"]:
-            for url in tweet["entities"]["urls"]:
-                if url["display_url"].startswith("instagram.com/p/"):
-                    db_tweet.pictures.append(Picture(source="instagram", img_url=url["expanded_url"] + "media/"))
+            self.extract_instagram_images(tweet["entities"]["urls"], db_tweet)
         
+        # Add the tweet to the session
+        session.add(db_tweet)
         session.commit()

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-resize=no">
+    <title>Route Card</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Economica">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.3/css/materialize.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.2.3/leaflet.draw.css">
+    <link rel="stylesheet" href="css/webgis.css">
+</head>
+<body>
+    <div id="container">
+        <div class="navbar-fixed">
+            <ul id="layers-dropdown" class="dropdown-content">
+                <li class="active"><a href="#!">Live Feed</a></li>
+                <li><a href="#!">Statistics</a></li>
+                <li><a href="#!">Trends</a></li>
+                <li><a href="#!">Heatmap</a></li>
+            </ul>
+            <nav>
+                <div class="nav-wrapper blue accent-2">
+                    <a href="#!" class="brand-logo hide-on-med-and-down">WebGIS</a>
+                    <ul class="right">
+                        <li>
+                            <a class="dropdown-button waves-effect waves-light" href="#!" data-activates="layers-dropdown" data-beloworigin="true">
+                                <i class="material-icons left">layers</i> <span class="hide-on-sm">Layers</span><i class="material-icons right">arrow_drop_down</i>
+                            </a>
+                        </li>
+                        <li><a href="#" class="waves-effect waves-light"><i class="material-icons left">settings</i> Settings</a></li>
+                        <li><a href="#" class="waves-effect waves-light"><i class="material-icons left">info</i> About</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
+        
+        <!-- loading spinner -->
+        <div id="loading-spinner" class="valign-wrapper">
+            <div class="preloader-wrapper big active valign">
+                <div class="spinner-layer spinner-blue-only">
+                    <div class="circle-clipper left">
+                        <div class="circle"></div>
+                    </div>
+                    <div class="gap-patch">
+                        <div class="circle"></div>
+                    </div>
+                    <div class="circle-clipper right">
+                        <div class="circle"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Map -->
+        <div id="map-row" class="row">
+            <div id="map" class="col l12 m12 s12"></div>
+        </div>
+        
+        <!-- Cards -->
+        <div id="cards">
+            <div id="new-tweets">
+                <a class="waves-effect waves-light green btn z-index-3">45 New</a>
+            </div>
+            
+            <div class="card hoverable">
+                <div class="card-content">
+                    <div class="card-title">
+                        <a href="#">@alexanderurq</a>
+                        <a class="dropdown-button flat right" href="#" data-activates="dropdown1" data-alignment="right" data-constrainwidth="false">
+                            <i class="material-icons">more_vert</i>
+                        </a>
+                        <ul id="dropdown1" class="dropdown-content">
+                            <li><a href="#!">View Profile</a></li>
+                        </ul>
+                    </div>
+                    <p>I am a very simple card. I am good at containing small bits of information.
+                    I am convenient because I require little markup to use effectively.</p>
+                </div>
+            </div>
+            
+            <div class="card hoverable">
+                <div class="card-image waves-effect waves-block waves-dark">
+                    <img src="http://placehold.it/500x500">
+                    <div class="card-title">
+                        <a href="#">@alexanderurq</a>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <p>I am a very simple card. I am good at containing small bits of information.
+                    I am convenient because I require little markup to use effectively.</p>
+                </div>
+                <div class="card-action">
+                    <a href="#">Location</a>
+                    <a href="#">Source</a>
+                    <a href="#">Profile</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.2.3/leaflet.draw.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.0/knockout-min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.3/js/materialize.min.js"></script>
+    <script src="js/leaflet.heat.js"></script>
+    <script src="js/webgis.js"></script>
+    <script>
+
+    </script>
+</body>
+</html>

@@ -2,20 +2,21 @@ from sqlalchemy import Table, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from geoalchemy2 import Geometry
 from datetime import datetime
+from app.database import SCHEMA
 from app.database.base import Base
 
 # Hashtag-Tweet association table for many-many relationship
 hashtags_tweets = Table(
     "hashtags_tweets", 
     Base.metadata,
-    Column("hashtag_id", ForeignKey("tweets.hashtags.id"), primary_key=True),
-    Column("tweet_id", ForeignKey("tweets.tweets.id"), primary_key=True),
-    schema="tweets"
+    Column("hashtag_id", ForeignKey(SCHEMA + ".hashtags.id"), primary_key=True),
+    Column("tweet_id", ForeignKey(SCHEMA + ".tweets.id"), primary_key=True),
+    schema=SCHEMA
 )
 
 class Tweet(Base):
-    __tablename__ = 'tweets'
-    __table_args__ = {'schema': 'tweets'}
+    __tablename__ = "tweets"
+    __table_args__ = {"schema": SCHEMA}
     
     id = Column(Integer, primary_key=True)
     tweet_id = Column(String, nullable=False)
@@ -24,34 +25,30 @@ class Tweet(Base):
     user_id = Column(String)
     time = Column(DateTime)
     geom = Column(Geometry("POINT", 4326))
-    division_id = Column(Integer, ForeignKey('tweets.divisions.id'))
+    division_id = Column(Integer, ForeignKey(SCHEMA + ".divisions.id"))
     pictures = relationship("Picture", backref="tweet")
     hashtags = relationship("Hashtag", secondary=hashtags_tweets, back_populates="tweets")
 
 class Picture(Base):
     __tablename__ = "pictures"
-    __table_args__ = {'schema': 'tweets'}
+    __table_args__ = {"schema": SCHEMA}
     
     id = Column(Integer, primary_key=True)
-    tweet_id = Column(Integer, ForeignKey('tweets.tweets.id'))
+    tweet_id = Column(Integer, ForeignKey(SCHEMA + ".tweets.id"))
     source = Column(String, nullable=False)
     img_url = Column(String, nullable=False)
     
 class Hashtag(Base):
     __tablename__ = "hashtags"
-    __table_args__ = {'schema': 'tweets'}
+    __table_args__ = {"schema": SCHEMA}
     
     id = Column(Integer, primary_key=True)
     text = Column(String, nullable=False, unique=True, index=True)
     tweets = relationship("Tweet", secondary=hashtags_tweets, back_populates="hashtags")
-    
-    # For analysis purposes all hashtags will be lower case
-    def __init__(self, text):
-        self.text = text.lower()
 
 class Division(Base):
     __tablename__ = "divisions"
-    __table_args__ = {'schema': 'tweets'}
+    __table_args__ = {"schema": SCHEMA}
 
     id = Column(Integer, primary_key=True)
     name = Column(String(convert_unicode=True))

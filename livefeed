@@ -3,4 +3,7 @@ from app.livefeed import pubsub
 
 ps = pubsub.PubSub()
 
-ps.listen()
+try:
+    ps.listen()
+except KeyboardInterrupt:
+    pass
