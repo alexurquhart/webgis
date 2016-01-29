@@ -57,4 +57,4 @@ docs/_build/
 target/
 
 # Script to hold environment variables
-setenv
+config.sh

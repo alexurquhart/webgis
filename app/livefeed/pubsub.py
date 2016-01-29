@@ -9,8 +9,9 @@ class PubSub:
     
     # Publish tweet to subscribers
     def publish(self, tweet):
-        tweet["online_count"] = R.execute_command("PUBSUB", "NUMSUB", self.__channel)
-        data = json.dumps(tweet, ensure_ascii=False)
+        ser = tweet.serialized
+        ser["online_count"] = R.execute_command("PUBSUB", "NUMSUB", self.__channel)
+        data = json.dumps(ser, ensure_ascii=False)
         R.publish(self.__channel, data)
     
     # Listen for incoming data and print to stdout
