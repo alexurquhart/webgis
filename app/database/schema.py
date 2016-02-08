@@ -24,7 +24,7 @@ class Tweet(Base):
     screen_name = Column(String)
     user_id = Column(String)
     created_at = Column(DateTime)
-    coordinates = []
+    coordinates = None
     geom = Column(Geometry("POINT", 4326))
     division_id = Column(Integer, ForeignKey(SCHEMA + ".divisions.id"))
     pictures = relationship("Picture", backref="tweet")
@@ -32,7 +32,7 @@ class Tweet(Base):
     
     def __init__(self, tweet):
         coordinates = tweet["coordinates"]["coordinates"]
-        time = datetime.strptime(tweet["created_at"], "%a %b %d  %H:%M:%S +0000 %Y")
+        time = datetime.now()
         
         self.tweet_id = tweet['id_str'],
         self.text = tweet['text'],

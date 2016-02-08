@@ -57,11 +57,35 @@ class Database:
                 new_ht = Hashtag(text=ht)
             tweetClass.hashtags.append(new_ht)
     
+    # Filter out tweets from blacklisted users            
+    def filter(self, tweet):
+        eq = [
+            'CGI_Jobs',
+            'JoinTeamHealth',
+            'CintasCareers',
+        ]
+        
+        startswith = [
+            'tmj_',
+        ]
+        for name in eq:
+            if tweet.screen_name[0] is name:
+                return True
+
+        for name in startswith:
+            if tweet.screen_name[0].startswith(name):
+                return True
+                
+        return False
+    
     # Takes a tweet object from the API and inserts it into the database
     def insert_tweet(self, tweet):
         db_tweet = Tweet(tweet)
         
-        # If return if the point does not lie inside one of our divisions
+        if self.filter(db_tweet):
+            return
+        
+        # Return if the point does not lie inside one of our divisions
         div = self.get_division(db_tweet.geom)
         if div == None:
             return
@@ -77,8 +101,15 @@ class Database:
         return db_tweet
         
     # Get Heatmap Geom
-    # Returns geometry for all tweets recorded in the past hour
+    # Returns geometry for all tweets recorded in the past 6 hours
     def get_heatmap_geom(self):
-        hour_ago = datetime.utcnow() - timedelta(hours=1)
+        hour_ago = datetime.utcnow() - timedelta(hours=6)
         q = self.session.query(func.ST_Y(Tweet.geom), func.ST_X(Tweet.geom)).filter(Tweet.created_at > hour_ago).all()
+        return q
+        
+    # Get Last Tweets
+    # Returns tweets from the past hour throughout the entire AOI
+    def get_last_tweets(self):
+        hour_ago = datetime.utcnow() - timedelta(hours=1)
+        q = self.session.query(Tweet).filter(Tweet.created_at > hour_ago).all()
         return q

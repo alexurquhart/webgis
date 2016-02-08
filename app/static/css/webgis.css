@@ -29,7 +29,6 @@ html, body, #container {
     height: 100%;
     z-index: 998;
     background: rgba(0,0,0,0.2);
-    visibility: hidden;
 }
 
 #loading-spinner .preloader-wrapper {
