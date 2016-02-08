@@ -65,11 +65,11 @@ class Database:
                 return True
 
         for name in config.BLACKLIST_SCREENNAMES_STARTSWITH:
-            if tweet.screen_name[0].startswith(name.lower()):
+            if tweet.screen_name[0].lower().startswith(name):
                 return True
                 
         for name in config.BLACKLIST_SCREENNAMES_ENDSWITH:
-            if tweet.screen_name[0].endswith(name.lower()):
+            if tweet.screen_name[0].lower().endswith(name):
                 return True
                 
         return False

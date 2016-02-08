@@ -39,18 +39,15 @@ function Map(element) {
         map.removeLayer(layer);
     }
 
-    // Adds an array of tweet markers to the map, and returns the array of tweet data with a 'marker' field added
-    // function addTweetMarkers(tweets) {
-    //     $.map(tweets, function(tweet) {
-    //         var marker = L.
-    //     });
-    //     return tweets;
-    // }
+    function addMarker(marker) {
+        marker.addTo(map);
+    }
     
     return {
         addTopoJSONLayer: addTopoJSONLayer,
         addHeatmapLayer: addHeatmapLayer,
-        removeLayer: removeLayer
+        removeLayer: removeLayer,
+        addMarker: addMarker
     };
 }
 
@@ -58,6 +55,31 @@ function LiveFeed(url, cb) {
     var self = this;
     
 	var ws = new WebSocket(url);
+
+    function makeLinks(text) {
+        // Make t.co links work
+        var tco = /(https:\/\/t.co\/[A-Za-z0-9]+)/g;
+        var matches = text.match(tco);
+        if (matches) {
+            $.each(matches, function(index, match) {
+                text = text.replace(match, '<a href="' + match + '" target="new">' + match + '</a>');
+            });
+        }
+        return text;
+    }
+    
+    // Adds emoji's, and links to URL's and hashtags
+    function formatTweetText(tweet) {
+        tweet.text = twemoji.parse(tweet.text, { size: 16 });
+        tweet.text = makeLinks(tweet.text);
+        return tweet;
+    }
+    
+    // Creates a leaflet marker from an incoming tweet
+    function makeMarker(tweet) {
+        var marker = L.marker([tweet.coordinates[1], tweet.coordinates[0]]);
+        return marker;
+    }
 
 	ws.onopen = function() {
         Materialize.toast("Connected", 4000);
@@ -78,6 +100,8 @@ function LiveFeed(url, cb) {
 		// Make sure it isn't a "nodata" message
 		if (typeof(data.coordinates) !== 'undefined') {
 			// Push data to callback
+			data = formatTweetText(data);
+			data.marker = makeMarker(data);
 			cb(data);
 		}
 	};
@@ -91,30 +115,10 @@ function ViewModel() {
     
     this.map = new Map('map');
     this.feed = new LiveFeed("ws://webgis-alexurquhart.c9users.io/ws/", function(data) {
-        data = self.formatTweetText(data);
+        self.map.addMarker(data.marker);
         self.tweets.unshift(data);
     });
     this.overlayLayer = null;
-    
-    function makeLinks(text) {
-        // Make t.co links work
-        var tco = /(https:\/\/t.co\/[A-Za-z0-9]+)/g;
-        $.each(text.match(tco), function(index, match) {
-        text = text.replace(match, '<a href="' + match + '" target="new">' + match + '</a>');
-        });
-        return text;
-    }
-    
-    // Adds emoji's, and links to URL's and hashtags
-    this.formatTweetText = function(tweet) {
-        // Add emojis
-        tweet.text = twemoji.parse(tweet.text, { size: 16 });
-        
-        // Add links
-        tweet.text = makeLinks(tweet.text);
-        
-        return tweet
-    }
     
     this.toggleSpinner = function() {
         this.showSpinner(!this.showSpinner());
