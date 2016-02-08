@@ -1,12 +1,10 @@
 from flask import Flask
 from database import database
 from datetime import datetime
-import os, json
+import os, json, config
 application = Flask(__name__)
 
-DBURI = os.environ["DBURI"]
-
-db = database.Database(DBURI)
+db = database.Database(config.DBURI)
 
 # Returns 100's of  
 @application.route("/heatmap/")

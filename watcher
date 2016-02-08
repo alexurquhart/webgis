@@ -1,34 +1,23 @@
 #!/usr/bin/env python
 from TwitterAPI import TwitterAPI, TwitterConnectionError
+from app import config
 from app.database import database
 from app.livefeed import pubsub
 import os
 
-# Define API keys
-CONSUMER_KEY = os.environ["CONSUMER_KEY"]
-CONSUMER_SECRET = os.environ["CONSUMER_SECRET"]
-ACCESS_TOKEN_KEY = os.environ["ACCESS_TOKEN_KEY"]
-ACCESS_TOKEN_SECRET = os.environ["ACCESS_TOKEN_SECRET"]
-BBOX = os.environ["BBOX"]
-DBURI = os.environ["DBURI"]
-
-api = TwitterAPI(CONSUMER_KEY,
-                 CONSUMER_SECRET,
-                 ACCESS_TOKEN_KEY,
-                 ACCESS_TOKEN_SECRET)
-
-debug = False
-if "DEBUG" in os.environ and int(os.environ["DEBUG"]):
-    debug = True
+api = TwitterAPI(config.CONSUMER_KEY,
+                 config.CONSUMER_SECRET,
+                 config.ACCESS_TOKEN_KEY,
+                 config.ACCESS_TOKEN_SECRET)
 
 ps = pubsub.PubSub()
 
-db = database.Database(DBURI, debug)
+db = database.Database(config.DBURI, config.DEBUG)
 
 while True:
     try:
         # Get an API handler
-        r = api.request("statuses/filter", {"locations": BBOX})
+        r = api.request("statuses/filter", {"locations": config.BBOX})
 
         for item in r:
             if item["coordinates"] is not None:

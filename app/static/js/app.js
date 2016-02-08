@@ -78,7 +78,6 @@ function LiveFeed(url, cb) {
 		// Make sure it isn't a "nodata" message
 		if (typeof(data.coordinates) !== 'undefined') {
 			// Push data to callback
-			
 			cb(data);
 		}
 	};
@@ -92,10 +91,30 @@ function ViewModel() {
     
     this.map = new Map('map');
     this.feed = new LiveFeed("ws://webgis-alexurquhart.c9users.io/ws/", function(data) {
-        data.text = twemoji.parse(data.text, { size: 16 });
+        data = self.formatTweetText(data);
         self.tweets.unshift(data);
     });
     this.overlayLayer = null;
+    
+    function makeLinks(text) {
+        // Make t.co links work
+        var tco = /(https:\/\/t.co\/[A-Za-z0-9]+)/g;
+        $.each(text.match(tco), function(index, match) {
+        text = text.replace(match, '<a href="' + match + '" target="new">' + match + '</a>');
+        });
+        return text;
+    }
+    
+    // Adds emoji's, and links to URL's and hashtags
+    this.formatTweetText = function(tweet) {
+        // Add emojis
+        tweet.text = twemoji.parse(tweet.text, { size: 16 });
+        
+        // Add links
+        tweet.text = makeLinks(tweet.text);
+        
+        return tweet
+    }
     
     this.toggleSpinner = function() {
         this.showSpinner(!this.showSpinner());

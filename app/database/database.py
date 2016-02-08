@@ -2,6 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from geoalchemy2 import functions as func
 from datetime import datetime, timedelta
+from app import config
 from app.database.base import Base
 from app.database.schema import Tweet, Hashtag, Picture, Division
 import codecs, json
@@ -59,21 +60,16 @@ class Database:
     
     # Filter out tweets from blacklisted users            
     def filter(self, tweet):
-        eq = [
-            'CGI_Jobs',
-            'JoinTeamHealth',
-            'CintasCareers',
-        ]
-        
-        startswith = [
-            'tmj_',
-        ]
-        for name in eq:
+        for name in config.BLACKLIST_SCREENNAMES_EQ:
             if tweet.screen_name[0] is name:
                 return True
 
-        for name in startswith:
-            if tweet.screen_name[0].startswith(name):
+        for name in config.BLACKLIST_SCREENNAMES_STARTSWITH:
+            if tweet.screen_name[0].startswith(name.lower()):
+                return True
+                
+        for name in config.BLACKLIST_SCREENNAMES_ENDSWITH:
+            if tweet.screen_name[0].endswith(name.lower()):
                 return True
                 
         return False
