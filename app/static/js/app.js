@@ -38,9 +38,11 @@ function Map(element) {
     function removeLayer(layer) {
         map.removeLayer(layer);
     }
-
-    function addMarker(marker) {
-        marker.addTo(map);
+    
+    function addMarker(tweet) {
+        var myIcon = L.divIcon();
+        tweet.marker = L.marker([tweet.coordinates[1], tweet.coordinates[0]], { icon: myIcon }).addTo(map);
+        return tweet;
     }
     
     return {
@@ -75,12 +77,6 @@ function LiveFeed(url, cb) {
         return tweet;
     }
     
-    // Creates a leaflet marker from an incoming tweet
-    function makeMarker(tweet) {
-        var marker = L.marker([tweet.coordinates[1], tweet.coordinates[0]]);
-        return marker;
-    }
-
 	ws.onopen = function() {
         Materialize.toast("Connected", 4000);
 	};
@@ -101,7 +97,6 @@ function LiveFeed(url, cb) {
 		if (typeof(data.coordinates) !== 'undefined') {
 			// Push data to callback
 			data = formatTweetText(data);
-			data.marker = makeMarker(data);
 			cb(data);
 		}
 	};
@@ -115,7 +110,7 @@ function ViewModel() {
     
     this.map = new Map('map');
     this.feed = new LiveFeed("ws://webgis-alexurquhart.c9users.io/ws/", function(data) {
-        self.map.addMarker(data.marker);
+        data = self.map.addMarker(data);
         self.tweets.unshift(data);
     });
     this.overlayLayer = null;
@@ -127,39 +122,46 @@ function ViewModel() {
     this.setOverlay = function(newOverlay) {
         var oldLayer = this.activeOverlay();
         
-        if (newOverlay !== oldLayer) {
-            this.toggleSpinner();
-            this.activeOverlay(newOverlay);
-            
-            if (this.overlayLayer !== null) {
-                this.map.removeLayer(this.overlayLayer);
-            }
-            
-            switch(newOverlay) {
-                case 'livefeed':
+        if (newOverlay === oldLayer) {
+            return;
+        }
+        
+        this.toggleSpinner();
+        this.activeOverlay(newOverlay);
+        
+        if (this.overlayLayer !== null) {
+            this.map.removeLayer(this.overlayLayer);
+        }
+        
+        if (oldLayer === 'livefeed') {
+            $('.leaflet-marker-pane').hide();
+        }
+        
+        switch(newOverlay) {
+            case 'livefeed':
+                self.toggleSpinner();
+                $('.leaflet-marker-pane').show();
+                break;
+            case 'statistics':
+                this.map.addTopoJSONLayer('js/divisions.topojson', function(l, error) {
                     self.toggleSpinner();
-                    break;
-                case 'statistics':
-                    this.map.addTopoJSONLayer('js/divisions.topojson', function(l, error) {
-                        self.toggleSpinner();
-                        if (error) {
-                            alert(error);
-                            return;
-                        }
-                        self.overlayLayer = l;
-                    });
-                    break;
-                case 'heatmap':
-                    this.map.addHeatmapLayer('heatmap/', function(l, error) {
-                        self.toggleSpinner();
-                        if (error) {
-                            alert(error);
-                            return;
-                        }
-                        self.overlayLayer = l;
-                    });
-                    break;
-            }
+                    if (error) {
+                        alert(error);
+                        return;
+                    }
+                    self.overlayLayer = l;
+                });
+                break;
+            case 'heatmap':
+                this.map.addHeatmapLayer('heatmap/', function(l, error) {
+                    self.toggleSpinner();
+                    if (error) {
+                        alert(error);
+                        return;
+                    }
+                    self.overlayLayer = l;
+                });
+                break;
         }
     };
 }

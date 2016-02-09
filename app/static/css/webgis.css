@@ -60,3 +60,22 @@ html, body, #container {
     position: absolute;
     z-index: 997;
 }
+
+.leaflet-div-icon {
+    background: rgba(68,138,255,0.5);
+    width: 15px !important;
+    height: 15px !important;
+    border-radius: 100%;
+    border-color: rgba(0,0,0,0.3);
+    box-shadow: 3px 3px 8px #888;
+    transition: all 0.5s ease;
+}
+
+.leaflet-div-icon .hover {
+    background: rgba(255,204,0, 0.8);
+    z-index: 999 !important;
+}
+
+.leaflet-div-icon:hover {
+    box-shadow: 3px 3px 8px #000;
+}
