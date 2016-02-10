@@ -20,7 +20,7 @@ while True:
         r = api.request("statuses/filter", {"locations": config.BBOX})
 
         for item in r:
-            if item["coordinates"] is not None:
+            if "coordinates" in item and item["coordinates"] is not None:
                 tweet = db.insert_tweet(item)
                 if tweet is not None:
                     ps.publish(tweet)

@@ -1,6 +1,6 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, distinct, func, desc
 from sqlalchemy.orm import sessionmaker
-from geoalchemy2 import functions as func
+from geoalchemy2 import functions as geo_func
 from datetime import datetime, timedelta
 from app import config
 from app.database.base import Base
@@ -100,7 +100,7 @@ class Database:
     # Returns geometry for all tweets recorded in the past 6 hours
     def get_heatmap_geom(self):
         hour_ago = datetime.utcnow() - timedelta(hours=6)
-        q = self.session.query(func.ST_Y(Tweet.geom), func.ST_X(Tweet.geom)).filter(Tweet.created_at > hour_ago).all()
+        q = self.session.query(geo_func.ST_Y(Tweet.geom), geo_func.ST_X(Tweet.geom)).filter(Tweet.created_at > hour_ago).all()
         return q
         
     # Get Last Tweets
@@ -109,3 +109,53 @@ class Database:
         hour_ago = datetime.utcnow() - timedelta(hours=1)
         q = self.session.query(Tweet).filter(Tweet.created_at > hour_ago).all()
         return q
+
+    # Returns a list of all division ids
+    def get_division_ids(self):
+        ids = self.session.query(Division.id).all()
+        return map(lambda x: x[0], ids)
+
+    '''
+        Get Division Chloropleth
+        
+        The queries return an hourly list containing tweet activity throughout
+        the entire hour, and for each division per hour. It's essentially:
+        
+        with hour_count as (
+            select date_trunc('hour', created_at) as hour,
+            count(*) over (partition by date_trunc('hour', created_at)) as count_all,
+            division_id from tweets.tweets
+            where created_at > now() - interval '1 week'
+        ),
+        select distinct
+            hour,
+            division_id,
+            count_all,
+            count(*) over (partition by division_id, hour) as div_count,
+            from hour_count
+            order by hour desc, division_id;
+    '''
+    def get_division_chloropleth(self):
+        
+        # Search back 1 week
+        week_ago = datetime.utcnow() - timedelta(days=7)
+        
+        # Truncate the hour
+        hour_f = func.date_trunc('hour', Tweet.created_at)
+        
+        sq = self.session.query(
+            hour_f.label('hour'),
+            func.count('*').over(partition_by=hour_f).label('count_all'),
+            Tweet.division_id).\
+            filter(Tweet.created_at > week_ago).\
+            subquery()
+        
+        # Use sq.c to access columns
+        return self.session.query(
+            sq.c.hour,
+            sq.c.division_id,
+            sq.c.count_all,
+            func.count('*').over(partition_by=[sq.c.division_id, sq.c.hour]).label('div_count')).\
+            order_by(sq.c.hour.desc(), sq.c.division_id).\
+            distinct().all()
+

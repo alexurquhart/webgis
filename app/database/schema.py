@@ -23,10 +23,10 @@ class Tweet(Base):
     text = Column(String(convert_unicode=True))
     screen_name = Column(String)
     user_id = Column(String)
-    created_at = Column(DateTime)
+    created_at = Column(DateTime, index=True)
     coordinates = None
     geom = Column(Geometry("POINT", 4326))
-    division_id = Column(Integer, ForeignKey(SCHEMA + ".divisions.id"))
+    division_id = Column(Integer, ForeignKey(SCHEMA + ".divisions.id"), index=True)
     pictures = relationship("Picture", backref="tweet")
     hashtags = relationship("Hashtag", secondary=hashtags_tweets, back_populates="tweets")
     
@@ -81,7 +81,7 @@ class Picture(Base):
     __table_args__ = {"schema": SCHEMA}
     
     id = Column(Integer, primary_key=True)
-    tweet_id = Column(Integer, ForeignKey(SCHEMA + ".tweets.id"))
+    tweet_id = Column(Integer, ForeignKey(SCHEMA + ".tweets.id"), index=True)
     source = Column(String, nullable=False)
     img_url = Column(String, nullable=False)
     
