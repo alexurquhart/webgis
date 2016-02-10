@@ -12,7 +12,7 @@ api = TwitterAPI(config.CONSUMER_KEY,
 
 ps = pubsub.PubSub()
 
-db = database.Database(config.DBURI, config.DEBUG)
+db = database.Database(config.DBURI, config.DEBUG, drop_all=False)
 
 while True:
     try:

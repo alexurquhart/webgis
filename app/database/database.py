@@ -9,20 +9,20 @@ import codecs, json
 
 class Database:
     
-    def __init__(self, uri, debug=False, divisions_file="data/divisions.json"):
+    def __init__(self, uri, debug=False, drop_all=False, divisions_file="data/divisions.json"):
         self.__debug = debug
         self.__engine = create_engine(uri, echo=debug, client_encoding='utf8')
         self.__base = Base
         
         # Drop all if debugging
-        if self.__debug:
+        if self.__debug and drop_all:
             self.__base.metadata.drop_all(self.__engine)
         
         self.__base.metadata.create_all(self.__engine)
         self.session = sessionmaker(bind=self.__engine)()
 
-        # Load all divisions from GeoJSON if debugging
-        if self.__debug:
+        # Load all divisions from GeoJSON if debugging, and all tables were dropped
+        if self.__debug and drop_all:
             features = self.load_geojson(divisions_file)
             self.create_divisions(features)
     
