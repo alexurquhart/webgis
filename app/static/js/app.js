@@ -153,7 +153,7 @@ function ViewModel() {
                 });
                 break;
             case 'heatmap':
-                this.map.addHeatmapLayer('heatmap/', function(l, error) {
+                this.map.addHeatmapLayer('tweets/heatmap', function(l, error) {
                     self.toggleSpinner();
                     if (error) {
                         alert(error);

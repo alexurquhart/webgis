@@ -116,10 +116,11 @@ class Database:
         return map(lambda x: x[0], ids)
 
     '''
-        Get Division Chloropleth
+        Get Division Temporal Histogram
         
         The queries return an hourly list containing tweet activity throughout
-        the entire hour, and for each division per hour. It's essentially:
+        the entire hour, and for each division per hour. The analysis is performed for all
+        tweets throughout the past 7 days. It's essentially:
         
         with hour_count as (
             select date_trunc('hour', created_at) as hour,
@@ -134,9 +135,18 @@ class Database:
             count(*) over (partition by division_id, hour) as div_count,
             from hour_count
             order by hour desc, division_id;
+            
+        Returns a list of dictionaries in the format:
+        [
+            {
+                "hour": datetime(...),
+                "division_id": x[1],
+                "count_all": x[2],
+                "div_count": x[3]
+            }
+        ]
     '''
-    def get_division_chloropleth(self):
-        
+    def get_division_temporal_histogram(self):
         # Search back 1 week
         week_ago = datetime.utcnow() - timedelta(days=7)
         
@@ -151,11 +161,14 @@ class Database:
             subquery()
         
         # Use sq.c to access columns
-        return self.session.query(
+        result = self.session.query(
             sq.c.hour,
             sq.c.division_id,
             sq.c.count_all,
             func.count('*').over(partition_by=[sq.c.division_id, sq.c.hour]).label('div_count')).\
             order_by(sq.c.hour.desc(), sq.c.division_id).\
             distinct().all()
+        
+        # Format the result
+        return map(lambda x: { "hour": x[0], "division_id": x[1], "count_all": x[2], "div_count": x[3] }, result)
 
