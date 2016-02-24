@@ -1,7 +1,6 @@
 /*globals ko L topojson twemoji Materialize*/
 
-var BASE_URL = 'webgis-alexurquhart.c9users.io';
-var LIVEFEED_URL = 'ws://' + BASE_URL + '/ws/';
+var LIVEFEED_URL = "ws://" + window.location.hostname + (window.location.port ? ':' + window.location.port: '') + '/ws/';
 var TILE_URL = 'http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
 var STATISTICS_LAYER_URL = 'js/divisions.topojson';
 var HEATMAP_LAYER_URL = 'tweets/heatmap';
