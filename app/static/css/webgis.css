@@ -71,8 +71,8 @@ html, body, #container {
     transition: all 0.5s ease;
 }
 
-.leaflet-div-icon .hover {
-    background: rgba(255,204,0, 0.8);
+.leaflet-div-icon:last-child {
+    background: rgba(255,204,0, 0.8) !important;
     z-index: 999 !important;
 }
 

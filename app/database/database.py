@@ -97,9 +97,9 @@ class Database:
         return db_tweet
         
     # Get Heatmap Geom
-    # Returns geometry for all tweets recorded in the past 6 hours
+    # Returns geometry for all tweets recorded in the past day
     def get_heatmap_geom(self):
-        hour_ago = datetime.utcnow() - timedelta(hours=6)
+        hour_ago = datetime.utcnow() - timedelta(hours=24)
         q = self.session.query(geo_func.ST_Y(Tweet.geom), geo_func.ST_X(Tweet.geom)).filter(Tweet.created_at > hour_ago).all()
         return q
         
