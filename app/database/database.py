@@ -65,11 +65,11 @@ class Database:
                 return True
 
         for name in config.BLACKLIST_SCREENNAMES_STARTSWITH:
-            if tweet.screen_name[0].lower().startswith(name):
+            if tweet.screen_name[0].lower().startswith(name.lower()):
                 return True
                 
         for name in config.BLACKLIST_SCREENNAMES_ENDSWITH:
-            if tweet.screen_name[0].lower().endswith(name):
+            if tweet.screen_name[0].lower().endswith(name.lower()):
                 return True
                 
         return False
@@ -136,15 +136,7 @@ class Database:
             from hour_count
             order by hour desc, division_id;
             
-        Returns a list of dictionaries in the format:
-        [
-            {
-                "hour": datetime(...),
-                "division_id": x[1],
-                "count_all": x[2],
-                "div_count": x[3]
-            }
-        ]
+        Returns a dictionary with a list of times for the past week with tweets
     '''
     def get_division_temporal_histogram(self):
         # Search back 1 week
@@ -153,6 +145,7 @@ class Database:
         # Truncate the hour
         hour_f = func.date_trunc('hour', Tweet.created_at)
         
+        # sq = subquery
         sq = self.session.query(
             hour_f.label('hour'),
             func.count('*').over(partition_by=hour_f).label('count_all'),
@@ -170,5 +163,9 @@ class Database:
             distinct().all()
         
         # Format the result
-        return map(lambda x: { "hour": x[0], "division_id": x[1], "count_all": x[2], "div_count": x[3] }, result)
+        histogram = map(lambda x: { "hour": x[0], "division_id": x[1], "count_all": x[2], "div_count": x[3] }, result)
+        return {
+            "startTime": week_ago.strftime("%Y-%m-%d %H:00:00"),
+            "data": histogram
+        }
 

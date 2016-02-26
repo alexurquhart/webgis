@@ -63,9 +63,10 @@
         
         <!-- Cards -->
         <div id="cards">
-            <!--<div id="new-tweets">-->
-            <!--    <a class="waves-effect waves-light green btn z-index-3">45 New</a>-->
-            <!--</div>-->
+             <div id="new-tweets" data-bind="visible: pauseLiveFeed && hiddenTweets().length > 0">
+                 <a class="waves-effect waves-light green btn z-index-3" data-bind="click: scrollToTop, text: newTweetsMessage"></a>
+            </div>
+            
             <div data-bind="visible: activeOverlay() === 'livefeed', foreach: tweets">
                 <div data-bind="if: pictures.length === 0">
                     <div data-bind="template: { name: 'text-card-template' }"></div>
@@ -112,10 +113,10 @@
         <div class="card hoverable">
             <div class="card-image waves-effect waves-block waves-dark">
                 <div data-bind="if: pictures[0].source === 'instagram'">
-                    <img data-bind="attr: { src: pictures[0].img_url + '?size=l' }">
+                    <img onload="loadImages(this)" data-bind="attr: { src: pictures[0].img_url + '?size=l' }">
                 </div>
                 <div data-bind="if: pictures[0].source === 'twitter'">
-                    <img data-bind="attr: { src: pictures[0].img_url }">
+                    <img onload="loadImages(this)" data-bind="attr: { src: pictures[0].img_url }">
                 </div>
             </div>
             <div class="card-content">

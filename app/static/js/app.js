@@ -22,10 +22,15 @@ function Map(element) {
             // Get the histogram statistics
             $.getJSON(HISTOGRAM_URL)
             .done(function(histogram) {
-                geojson = $.map(geojson, function(g) {
+                geojson.features = $.map(geojson.features, function(g) {
+                    // Find the ID's in the histogram and add it to the geojson properties
+                    g.properties.histogram = $.grep(histogram, function(h) {
+                        return h.division_id == g.properties.id
+                    });
                     return g;
                 });
-                
+                console.log(geojson);
+
                 cb(geojson, null);
             })
             .fail(function(jqxhr, textStatus, error) {
@@ -110,15 +115,15 @@ function LiveFeed(url, cb) {
     }
     
 	ws.onopen = function() {
-        Materialize.toast("Connected", 4000);
+	    cb(null, "Connected");
 	};
 
 	// Restart the connection if it closes
 	ws.onclose = function() { 
-		Materialize.toast("Disconnected", 4000);
 		window.setTimeout(function() {
 		    new LiveFeed(url, cb);
 		}, 1000);
+		cb(null, "Disconnected");
 	};
 
 	// Message received...
@@ -139,47 +144,53 @@ function ViewModel() {
     this.activeOverlay = ko.observable("livefeed");
     this.showSpinner = ko.observable(false);
     this.tweets = ko.observableArray();
-    
-    // Delay 5 minutes before deleting received tweets from the live feed
-    var delayBeforeDelete = 10 * 60 * 1000;
-    
+    this.hiddenTweets = ko.observableArray();
+    this.pauseLiveFeed = ko.observable(false);
     this.map = new Map('map');
-    this.feed = new LiveFeed(LIVEFEED_URL, function(data, msg) {
-        if (data !== null) {
-            data = self.map.addMarker(data);
-            self.tweets.unshift(data);
-            
-            // Delete the incoming tweet after 5 mins
-            setTimeout(function() {
-                self.map.removeLayer(data.marker);
-                self.tweets.remove(data);
-            }, delayBeforeDelete);
-        }
-        
-        // Only display messages when the livefeed is the active overlay
-        if (msg !== null && self.activeOverlay() === "livefeed") {
-            Materialize.toast(msg, 3000);
-        }
-
-    });
     this.overlayLayer = null;
     
     this.toggleSpinner = function() {
         this.showSpinner(!this.showSpinner());
     };
     
+    this.incomingTweetCallback = function(data, msg) {
+        if (data !== null) {
+            data = self.map.addMarker(data);
+            
+            if (self.pauseLiveFeed()) {
+                self.hiddenTweets.unshift(data);
+            } else {
+                self.tweets.unshift(data);
+            }
+            
+            // Delete the incoming tweet after 10 mins
+            setTimeout(function() {
+                self.map.removeLayer(data.marker);
+                self.tweets.remove(data);
+                self.hiddenTweets.remove(data);
+            }, 600000);
+        }
+        
+        // Only display messages when the livefeed is the active overlay
+        if (msg !== null && self.activeOverlay() === "livefeed") {
+            Materialize.toast(msg, 3000);
+        }
+    };
+    
+    this.feed = new LiveFeed(LIVEFEED_URL, this.incomingTweetCallback);
+    
     this.setOverlay = function(newOverlay) {
-        var oldLayer = this.activeOverlay();
+        var oldLayer = self.activeOverlay();
         
         if (newOverlay === oldLayer) {
             return;
         }
         
-        this.toggleSpinner();
-        this.activeOverlay(newOverlay);
+        self.toggleSpinner();
+        self.activeOverlay(newOverlay);
         
-        if (this.overlayLayer !== null) {
-            this.map.removeLayer(this.overlayLayer);
+        if (self.overlayLayer !== null) {
+            self.map.removeLayer(self.overlayLayer);
         }
         
         if (oldLayer === 'livefeed') {
@@ -192,7 +203,7 @@ function ViewModel() {
                 $('.leaflet-marker-pane').show();
                 break;
             case 'statistics':
-                this.map.addStatisticsLayer(function(l, error) {
+                self.map.addStatisticsLayer(function(l, error) {
                     self.toggleSpinner();
                     if (error) {
                         alert(error);
@@ -202,7 +213,7 @@ function ViewModel() {
                 });
                 break;
             case 'heatmap':
-                this.map.addHeatmapLayer(HEATMAP_LAYER_URL, function(l, error) {
+                self.map.addHeatmapLayer(HEATMAP_LAYER_URL, function(l, error) {
                     self.toggleSpinner();
                     if (error) {
                         alert(error);
@@ -213,15 +224,47 @@ function ViewModel() {
                 break;
         }
     };
+    
+    this.checkFeedScroll = function() {
+        // Determine scroll position
+        var pos = $('#cards').scrollTop();
+        if (pos > 0) {
+            $('#new-tweets').css({top: pos + 10});
+            self.pauseLiveFeed(true);
+        } else {
+            self.pauseLiveFeed(false);
+            
+            var hiddenLength = self.hiddenTweets().length;
+            if (hiddenLength > 0) {
+                for (var i = hiddenLength; i > 0; --i) {
+                    self.tweets.unshift(self.hiddenTweets.shift());
+                }
+            }
+        }
+    };
+    
+    this.scrollToTop = function() {
+        $('#cards').scrollTop(0);
+    }
+    
+    this.newTweetsMessage = ko.computed(function() {
+        return self.hiddenTweets().length + ' New'; 
+    });
 }
 
-function ResizeCards() {
-    $('#cards').css('max-height', $(window).height() - 110);
-}
+window.loadImages = function(obj) {
+    Materialize.fadeInImage(obj);
+    $(obj).parent().parent().css({height: $(obj).height()});  
+};
 
 $(document).ready(function() {
+    function ResizeCards() {
+        $('#cards').css('max-height', $(window).height() - 110);
+    }
+    
     var vm = new ViewModel();
     ko.applyBindings(vm);
     $(window).resize(ResizeCards);
+    $('#cards').scroll(vm.checkFeedScroll);
     ResizeCards();
 });
