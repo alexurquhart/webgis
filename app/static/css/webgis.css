@@ -41,6 +41,7 @@ html, body, #container {
     right: 0px;
     width: 20%;
     min-width: 400px;
+    min-height: 100px;
     overflow-y: auto;
 }
 

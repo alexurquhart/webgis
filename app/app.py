@@ -21,9 +21,9 @@ def last_tweets():
 def div_histogram_all():
     res = db.get_division_temporal_histogram()
     
-    # Cast datetimes to strings - as they will not be needed for any analysis here
+    # Cast datetimes to strings and add UTC identifier - as they will not be needed for any analysis here
     for item in res["data"]:
-        item.update((k, str(v)) for k, v in item.iteritems() if k is 'hour')
+        item.update((k, str(v) + 'Z') for k, v in item.iteritems() if k is 'hour')
         
     return json.dumps(res)
     

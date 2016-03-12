@@ -69,7 +69,7 @@ class Tweet(Base):
             "text": self.text,
             "screen_name": self.screen_name,
             "user_id": self.user_id,
-            "created_at": self.created_at.isoformat(),
+            "created_at": self.created_at.isoformat() + 'Z',        # Because the tweets come in UTC - append the Z
             "coordinates": self.coordinates,
             "division_id": self.division_id,
             "pictures": [pic.serialized for pic in self.pictures],

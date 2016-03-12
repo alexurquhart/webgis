@@ -165,7 +165,7 @@ class Database:
         # Format the result
         histogram = map(lambda x: { "hour": x[0], "division_id": x[1], "count_all": x[2], "div_count": x[3] }, result)
         return {
-            "startTime": week_ago.strftime("%Y-%m-%d %H:00:00"),
+            "startTime": week_ago.strftime("%Y-%m-%d %H:00:00Z"),
             "data": histogram
         }
 

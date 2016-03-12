@@ -2,9 +2,13 @@
 
 var LIVEFEED_URL = "ws://" + window.location.hostname + (window.location.port ? ':' + window.location.port: '') + '/ws/';
 var TILE_URL = 'http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
-var STATISTICS_LAYER_URL = 'js/divisions.topojson';
+var STATISTICS_LAYER_URL = 'data/divisions.topojson';
 var HEATMAP_LAYER_URL = 'tweets/heatmap';
 var HISTOGRAM_URL = 'division/histogram/all'
+
+function StatisticsLayer() {
+    
+}
 
 function Map(element) {
     // Start the map
@@ -22,15 +26,23 @@ function Map(element) {
             // Get the histogram statistics
             $.getJSON(HISTOGRAM_URL)
             .done(function(histogram) {
+                histogram.startTime = new Date(histogram.startTime);
+                
+                // convert the datetimes in the histogram to Date() objects
+                histogram.data = $.map(histogram.data, function(h) {
+                    h.hour = new Date(h.hour);
+                    return h;
+                });
+                console.log(histogram);
+                
                 geojson.features = $.map(geojson.features, function(g) {
                     // Find the ID's in the histogram and add it to the geojson properties
-                    g.properties.histogram = $.grep(histogram, function(h) {
+                    g.properties.histogram = $.grep(histogram.data, function(h) {
                         return h.division_id == g.properties.id
                     });
                     return g;
                 });
-                console.log(geojson);
-
+                console.log(geojson)
                 cb(geojson, null);
             })
             .fail(function(jqxhr, textStatus, error) {
@@ -165,6 +177,7 @@ function ViewModel() {
             
             // Delete the incoming tweet after 10 mins
             setTimeout(function() {
+                self.checkFeedScroll();
                 self.map.removeLayer(data.marker);
                 self.tweets.remove(data);
                 self.hiddenTweets.remove(data);
@@ -212,6 +225,9 @@ function ViewModel() {
                     self.overlayLayer = l;
                 });
                 break;
+            case 'trends':
+                self.toggleSpinner();
+                break;
             case 'heatmap':
                 self.map.addHeatmapLayer(HEATMAP_LAYER_URL, function(l, error) {
                     self.toggleSpinner();
@@ -235,9 +251,10 @@ function ViewModel() {
             self.pauseLiveFeed(false);
             
             var hiddenLength = self.hiddenTweets().length;
+            var hidTweetsRev = self.hiddenTweets.reverse();
             if (hiddenLength > 0) {
-                for (var i = hiddenLength; i > 0; --i) {
-                    self.tweets.unshift(self.hiddenTweets.shift());
+                for (var i = 0; i < hiddenLength; i++) {
+                    self.tweets.unshift(hidTweetsRev.shift());
                 }
             }
         }
@@ -245,11 +262,15 @@ function ViewModel() {
     
     this.scrollToTop = function() {
         $('#cards').scrollTop(0);
-    }
+    };
     
     this.newTweetsMessage = ko.computed(function() {
         return self.hiddenTweets().length + ' New'; 
     });
+    
+    this.highlightTweet = function(obj) {
+        return true;
+    };
 }
 
 window.loadImages = function(obj) {
