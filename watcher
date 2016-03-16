@@ -12,7 +12,7 @@ api = TwitterAPI(config.CONSUMER_KEY,
 
 ps = pubsub.PubSub()
 
-db = database.Database(config.DBURI, config.DEBUG, drop_all=False)
+db = database.Database(config.DBURI, config.DEBUG, drop_all=config.TRUNCATE_TABLES)
 
 while True:
     try:

@@ -9,7 +9,7 @@ import codecs, json
 
 class Database:
     
-    def __init__(self, uri, debug=False, drop_all=False, divisions_file="data/divisions.json"):
+    def __init__(self, uri, debug=False, drop_all=config.TRUNCATE_TABLES, divisions_file="data/divisions.json"):
         self.__debug = debug
         self.__engine = create_engine(uri, echo=debug, client_encoding='utf8')
         self.__base = Base
@@ -31,6 +31,7 @@ class Database:
     def load_geojson(self, filename):
         with codecs.open(filename, 'r', "utf-8") as file:
             gj = file.read()
+            file.close()
         parsed = json.loads(gj)
         return parsed["features"]
         
@@ -99,14 +100,14 @@ class Database:
     # Get Heatmap Geom
     # Returns geometry for all tweets recorded in the past day
     def get_heatmap_geom(self):
-        hour_ago = datetime.utcnow() - timedelta(hours=24)
+        hour_ago = datetime.now() - timedelta(hours=24)
         q = self.session.query(geo_func.ST_Y(Tweet.geom), geo_func.ST_X(Tweet.geom)).filter(Tweet.created_at > hour_ago).all()
         return q
         
     # Get Last Tweets
     # Returns tweets from the past hour throughout the entire AOI
     def get_last_tweets(self):
-        hour_ago = datetime.utcnow() - timedelta(hours=1)
+        hour_ago = datetime.now() - timedelta(hours=1)
         q = self.session.query(Tweet).filter(Tweet.created_at > hour_ago).all()
         return q
 

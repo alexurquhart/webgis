@@ -2,7 +2,7 @@ from sqlalchemy import Table, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from geoalchemy2 import Geometry
 from datetime import datetime
-from app.database import SCHEMA
+from app.config import SCHEMA
 from app.database.base import Base
 
 # Hashtag-Tweet association table for many-many relationship
@@ -23,7 +23,7 @@ class Tweet(Base):
     text = Column(String(convert_unicode=True))
     screen_name = Column(String)
     user_id = Column(String)
-    created_at = Column(DateTime, index=True)
+    created_at = Column(DateTime(timezone=True), index=True)
     coordinates = None
     geom = Column(Geometry("POINT", 4326))
     division_id = Column(Integer, ForeignKey(SCHEMA + ".divisions.id"), index=True)
