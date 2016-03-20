@@ -9,7 +9,27 @@ ko.components.register('tweet-card', {
 	viewModel: function (params) {
 		var self = this;
 		this.tweet = params.tweet;
-		this.root = params.root;
+		this.map = params.root.map;
+
+		// Add a "click" callback to 
+
+		this.beginHover = function () {
+			 self.map.highlightMarker(self.tweet.marker);
+		};
+
+		this.endHover = function () {
+			self.map.unhighlightMarker(self.tweet.marker)
+		};
+
+		this.panToTweet = function () {
+			self.map.panToMarker(self.tweet.marker);
+			return true;
+		}
+
+		this.zoomToTweet = function() {
+			self.map.zoomToMarker(self.tweet.marker);
+			return true;
+		};
 	}
 });
 
@@ -80,8 +100,26 @@ function MapController() {
 
 	this.addMarker = function(tweet) {
 		var myIcon = L.divIcon();
-		tweet.marker = L.marker([tweet.coordinates[1], tweet.coordinates[0]], { icon: myIcon, title: tweet.text }).addTo(self.map);
+		tweet.marker = L.marker([tweet.coordinates[1], tweet.coordinates[0]], { icon: myIcon, title: tweet.unformattedText }).addTo(self.map);
 		return tweet;
+	};
+
+	this.highlightMarker = function (marker) {
+		var hlIcon = L.divIcon({className: 'marker-hover'});
+		marker.setIcon(hlIcon);
+	};
+
+	this.unhighlightMarker = function(marker) {
+		var myIcon = L.divIcon();
+		marker.setIcon(myIcon);
+	};
+
+	this.panToMarker = function(marker) {
+		self.map.panTo(marker.getLatLng());
+	};
+
+	this.zoomToMarker = function (marker) {
+		self.map.setView(marker.getLatLng(), 18);
 	};
 }
 
@@ -90,6 +128,7 @@ function LiveFeed(cb) {
 
 	// Adds emoji's, and links to URL's and hashtags
 	function formatTweetText(tweet) {
+		tweet.unformattedText = tweet.text;
 		tweet.text = twemoji.parse(tweet.text, { size: 16 });
 
 		// Make t.co links work
@@ -139,6 +178,8 @@ function AppViewModel() {
 	this.map = new MapController();
 	this.livefeed = new LiveFeed(function (data, msg) {
 		if (data !== null) {
+
+
 			data = self.map.addMarker(data);
 			
 			if (self.pauseLiveFeed()) {
@@ -150,7 +191,7 @@ function AppViewModel() {
 			// Delete the incoming tweet after 10 mins
 			setTimeout(function() {
 				self.checkFeedScroll();
-				self.map.removeLayer(data.marker);
+				self.map.map.removeLayer(data.marker);
 				self.tweets.remove(data);
 				self.hiddenTweets.remove(data);
 			}, 600000);

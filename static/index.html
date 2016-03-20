@@ -93,7 +93,6 @@
                         <div class="card-title">
                             Statistics
                         </div>
-                        
                     </div>
                 </div>
             </div>
@@ -103,7 +102,7 @@
     
     <!-- Knockout templates -->
     <template id="card-template">
-        <div class="card hoverable" data-bind="with: tweet">
+        <div class="card hoverable" data-bind="with: tweet, event: { mouseover: beginHover, mouseout: endHover, dblclick: zoomToTweet }, click: panToTweet">
             <!-- ko if: pictures && pictures.length > 0 -->
             <div class="card-image waves-effect waves-block waves-dark">
                 <div data-bind="if: pictures[0].source === 'instagram'">

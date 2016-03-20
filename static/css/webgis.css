@@ -81,7 +81,7 @@ html, body, #container {
     border-radius: 100%;
     border-color: rgba(0,0,0,0.3);
     box-shadow: 3px 3px 8px #888;
-    transition: all 0.5s ease;
+    transition: background 0.5s ease;
 }
 
 .leaflet-div-icon:last-child {
@@ -91,4 +91,15 @@ html, body, #container {
 
 .leaflet-div-icon:hover {
     box-shadow: 3px 3px 8px #000;
+}
+
+.marker-hover {
+    background: #4caf50 !important;
+    width: 15px !important;
+    height: 15px !important;
+    border-radius: 100%;
+    border-color: rgba(0,0,0,0.3);
+    box-shadow: 3px 3px 8px #888;
+    transition: background 0.5s ease;
+    z-index: 999 !important;
 }
