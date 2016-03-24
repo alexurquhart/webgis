@@ -1,4 +1,4 @@
-from conn import Redis as R
+from redis_conn import Redis as R
 from sys import stdout
 import json, time
 

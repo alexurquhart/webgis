@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-from app.livefeed import pubsub
+from app.pubsub import PubSub
 
-ps = pubsub.PubSub()
+ps = PubSub()
 
 try:
     ps.listen()

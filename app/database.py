@@ -2,9 +2,9 @@ from sqlalchemy import create_engine, distinct, func, desc
 from sqlalchemy.orm import sessionmaker
 from geoalchemy2 import functions as geo_func
 from datetime import datetime, timedelta
-from app import config
-from app.database.base import Base
-from app.database.schema import Tweet, Hashtag, Picture, Division
+import config
+from base import Base
+from schema import Tweet, Hashtag, Picture, Division
 import codecs, json
 
 class Database:

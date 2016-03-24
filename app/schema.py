@@ -2,8 +2,8 @@ from sqlalchemy import Table, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from geoalchemy2 import Geometry
 from datetime import datetime
-from app.config import SCHEMA
-from app.database.base import Base
+from config import SCHEMA
+from base import Base
 
 # Hashtag-Tweet association table for many-many relationship
 hashtags_tweets = Table(
