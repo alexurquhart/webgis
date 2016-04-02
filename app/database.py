@@ -22,9 +22,10 @@ class Database:
         self.session = sessionmaker(bind=self.__engine)()
 
         # Load all divisions from GeoJSON if debugging, and all tables were dropped
-        if self.__debug and drop_all:
-            features = self.load_geojson(divisions_file)
-            self.create_divisions(features)
+	count = self.session.query(func.count(Division.id)).scalar()
+	if count == 0:
+	    features = self.load_geojson(divisions_file)
+	    self.create_divisions(features)
     
     # Given a filename, opens the file and parses the GeoJSON,
     # returning the array of geojson feature objects
