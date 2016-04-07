@@ -8,25 +8,24 @@ from schema import Tweet, Hashtag, Picture, Division
 import codecs, json
 
 class Database:
-    
     def __init__(self, uri, debug=False, drop_all=config.TRUNCATE_TABLES, divisions_file="data/divisions.json"):
         self.__debug = debug
         self.__engine = create_engine(uri, echo=debug, client_encoding='utf8')
         self.__base = Base
         
         # Drop all if debugging
-        if self.__debug and drop_all:
+        if drop_all:
             self.__base.metadata.drop_all(self.__engine)
         
         self.__base.metadata.create_all(self.__engine)
         self.session = sessionmaker(bind=self.__engine)()
 
         # Load all divisions from GeoJSON if debugging, and all tables were dropped
-	count = self.session.query(func.count(Division.id)).scalar()
-	if count == 0:
-	    features = self.load_geojson(divisions_file)
-	    self.create_divisions(features)
-    
+        count = self.session.query(func.count(Division.id)).scalar()
+        if count == 0:
+            features = self.load_geojson(divisions_file)
+            self.create_divisions(features)
+        
     # Given a filename, opens the file and parses the GeoJSON,
     # returning the array of geojson feature objects
     def load_geojson(self, filename):
@@ -46,7 +45,10 @@ class Database:
     def get_division(self, geom):
         div = self.session.query(Division).filter(Division.geom.ST_Contains(geom)).first()
         return div
-        
+    
+    def close(self):
+        self.__engine.dispose()
+
     # Takes a list of hashtag entities and places them appropriately into the database Tweet object
     # First checks to see if the hashtag already exists, if so, then the existing name and ID is used
     # and an entry will be placed in the association table

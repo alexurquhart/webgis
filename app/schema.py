@@ -31,14 +31,16 @@ class Tweet(Base):
     hashtags = relationship("Hashtag", secondary=hashtags_tweets, back_populates="tweets")
     
     def __init__(self, tweet):
-        time = datetime.now()
         coordinates = tweet["coordinates"]["coordinates"]
+
+        if type(tweet["created_at"]) is not datetime:
+            tweet["created_at"] = datetime.now()
         
-        self.tweet_id = tweet['id_str'],
-        self.text = tweet['text'],
-        self.screen_name = tweet['user']['screen_name'],
-        self.user_id = tweet['user']['id_str'],
-        self.created_at = time,
+        self.tweet_id = tweet['id_str']
+        self.text = tweet['text']
+        self.screen_name = tweet['user']['screen_name']
+        self.user_id = tweet['user']['id_str']
+        self.created_at = tweet["created_at"]
         self.coordinates = [coordinates[0], coordinates[1]]
         self.geom = "SRID=4326;POINT({0} {1})".format(coordinates[0], coordinates[1])
         
