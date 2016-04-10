@@ -33,8 +33,9 @@ class Tweet(Base):
     def __init__(self, tweet):
         coordinates = tweet["coordinates"]["coordinates"]
 
-        if type(tweet["created_at"]) is not datetime:
-            tweet["created_at"] = datetime.now()
+        if type(tweet["created_at"]) is str:
+            tweet["created_at"] = datetime.strptime(tweet["created_at"], '%a %b %d %H:%M:%S +0000 %Y')
+
         
         self.tweet_id = tweet['id_str']
         self.text = tweet['text']
