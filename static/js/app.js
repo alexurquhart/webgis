@@ -3,6 +3,8 @@ var TILE_URL = 'http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
 var STATISTICS_LAYER_URL = 'data/divisions.topojson';
 var HEATMAP_LAYER_URL = 'tweets/heatmap';
 var HISTOGRAM_URL = 'division/histogram/all'
+var HISTOGRAM_DIV_URL = 'division/histogram/'
+var PICTURES_URL = 'pictures/';
 
 ko.components.register('tweet-card', {
 	template: { element: 'card-template' },
@@ -12,7 +14,6 @@ ko.components.register('tweet-card', {
 		this.map = params.root.map;
 
 		// Add a "click" callback to 
-
 		this.beginHover = function () {
 			 self.map.highlightMarker(self.tweet.marker);
 		};
@@ -33,40 +34,108 @@ ko.components.register('tweet-card', {
 	}
 });
 
+function DivStatsViewModel(params) {
+	var self = this;
+	this.division = params.division;
+	this.chart = null;
+
+	this.startupChart = function() {
+		$.getJSON(HISTOGRAM_DIV_URL + self.division().feature.id, function(data) {
+			var labels = $.map(data, function(i) {
+				var label = moment.utc(i.time).local();
+				if (label.hours() === 0) {
+					return label.format("MMM DD");
+				} else if (label.hours() % 3 == 0) {
+					return label.format("HH");
+				} else {
+					return '';
+				}
+			});
+
+			var count = $.map(data, function(i) {
+				return i.count;
+			});
+
+			if (!self.chart) {
+				self.chart = new Chartist.Bar(
+					'.div-barchart',
+					{
+						labels: labels,
+						series: [count]
+					},
+					{
+						chartPadding: {
+							top: 0,
+							right: 10,
+							bottom: 0,
+							left: 0
+						}
+					}
+				)
+			} else {
+				self.chart.update({labels: labels, series: [count]})
+			}
+		})
+	};
+
+	this.startupChart();
+
+	this.divSubscription = this.division.subscribe(function(newValue) {
+		self.startupChart();
+	});
+};
+
+DivStatsViewModel.prototype.dispose = function() {
+	this.divSubscription.dispose();
+}
+
+ko.components.register('div-stats', {
+	template: { element: 'div-stats' },
+	viewModel: DivStatsViewModel
+});
+
 function MapController() {
 	var self = this;
 	this.map = L.map('map').setView([44.09744824027576, -78.3709716796875], 8);
+/*	this.map.on('moveend', function(e) {
+		var bnds = self.map.getBounds().toBBoxString();
+		var url = 
+		$.get(PICTURES_URL + self.map.getBounds().toBBoxString(), function (data) {
+			 console.log(data);
+		})
+
+	});*/
 	this.activeLayer = null;
 	L.tileLayer(TILE_URL).addTo(this.map);
 
-	this.activateStatisticsLayer = function() {
+	this.activateStatisticsLayer = function(selectCb) {
 		var dfd = jQuery.Deferred();
 
-		$.when($.getJSON(STATISTICS_LAYER_URL), $.getJSON(HISTOGRAM_URL))
-		.then(function(json, histogram) {
-			var geojson = topojson.feature(json[0], json[0].objects.divisions);
-			histogram = histogram[0]
-			histogram.startTime = new Date(histogram.startTime);
+		$.when($.getJSON(STATISTICS_LAYER_URL))
+		.then(function(json) {
+			var geojson = topojson.feature(json, json.objects.divisions);
 			
-			// convert the datetimes in the histogram to Date() objects
-			histogram.data = $.map(histogram.data, function(h) {
-				h.hour = new Date(h.hour);
-				return h;
-			});
-			
-			geojson.features = $.map(geojson.features, function(g) {
-				// Find the ID's in the histogram and add it to the geojson properties
-				g.properties.histogram = $.grep(histogram.data, function(h) {
-					return h.division_id == g.properties.id
-				});
-				return g;
-			});
-
 			if (self.activeLayer !== null) {
 				self.map.removeLayer(self.activeLayer);
 			}
 
-			self.activeLayer = L.geoJson(geojson);
+			self.activeLayer = L.geoJson(geojson, {
+				onEachFeature: function(feature, layer) {
+					layer.on('click', function(e) {
+						selectCb({
+							feature: e.target.feature.properties,
+							selected: true
+						});
+					});
+
+					layer.on('mouseover', function(e) {
+						selectCb({
+							feature: e.target.feature.properties,
+							selected: false
+						});
+					});
+				}
+			});
 			self.map.addLayer(self.activeLayer);
 			dfd.resolve();
 
@@ -76,7 +145,7 @@ function MapController() {
 		return dfd.promise();
 	};
 
-	this.activateHeatmapLayer = function () {
+	this.activateHeatmapLayer = function() {
 		var dfd = jQuery.Deferred();
 		
 		$.getJSON(HEATMAP_LAYER_URL)
@@ -173,13 +242,13 @@ function AppViewModel() {
 	this.pane = ko.observable("livefeed");
 	this.showSpinner = ko.observable(false);
 	this.tweets = ko.observableArray();
+	this.hoverDivision = ko.observable(null);
+	this.selectedDivision = ko.observable(null);
 	this.hiddenTweets = ko.observableArray();
 	this.pauseLiveFeed = ko.observable(false);
 	this.map = new MapController();
 	this.livefeed = new LiveFeed(function (data, msg) {
 		if (data !== null) {
-
-
 			data = self.map.addMarker(data);
 			
 			if (self.pauseLiveFeed()) {
@@ -207,6 +276,16 @@ function AppViewModel() {
 		this.showSpinner(!this.showSpinner());
 	};
 
+	this.selectDivision = function(newData) {
+		if (!newData.selected) {
+			self.hoverDivision(newData);
+		} else {
+			if (!self.selectedDivision() || self.selectedDivision().feature.id !== newData.feature.id) {
+				self.selectedDivision(newData);
+			}
+		}
+	};
+
 	this.setOverlay = function(newLayer) {
 		var oldLayer = self.pane();
 		
@@ -215,8 +294,9 @@ function AppViewModel() {
 		}
 
 		self.pane(newLayer);
-		
 		self.toggleSpinner();
+		self.selectedDivision(null);
+		self.hoverDivision(null);
 		
 		if (oldLayer === 'livefeed') {
 			$('.leaflet-marker-pane').hide();
@@ -230,7 +310,7 @@ function AppViewModel() {
 				self.toggleSpinner();
 				break;
 			case 'statistics':
-				self.map.activateStatisticsLayer()
+				self.map.activateStatisticsLayer(self.selectDivision)
 				.fail(function (error) {
 					 alert(error); 
 				})

@@ -2,7 +2,7 @@ from app import config
 from app.database import Database
 from app.pubsub import PubSub
 from app.schema import Tweet, Division, Hashtag, Picture
-from geoalchemy2 import functions as func
+from sqlalchemy import func
 from datetime import datetime, timedelta
 from time import sleep
 import os, json
@@ -53,26 +53,27 @@ TEST_TWEET = {
 	}
 }
 
-db = Database(config.DBURI, False, True)
-duration = timedelta(days=7)
-interval = timedelta(minutes=60)
-now = datetime.now()
-centroid = func.ST_Centroid(Division.geom)
-for row in db.session.query(func.ST_X(centroid), func.ST_Y(centroid)).all():
-	# Create 1 tweet per hour per division for the past 7 days
-	for i in range(0, int(duration.total_seconds()) + 60, 3600):
-		new_tweet = TEST_TWEET.copy()
-		new_tweet["coordinates"]["coordinates"] = list(row)
-		new_tweet["created_at"] = now - timedelta(seconds=i)
-		db.insert_tweet(new_tweet)
+db = Database(config.DBURI, True, False)
+# duration = timedelta(days=7)
+# interval = timedelta(minutes=60)
+# now = datetime.now()
+# centroid = func.ST_Centroid(Division.geom)
+# for row in db.session.query(func.ST_X(centroid), func.ST_Y(centroid)).all():
+# 	# Create 1 tweet per hour per division for the past 7 days
+# 	for i in range(0, int(duration.total_seconds()) + 60, 3600):
+# 		new_tweet = TEST_TWEET.copy()
+# 		new_tweet["coordinates"]["coordinates"] = list(row)
+# 		new_tweet["created_at"] = now - timedelta(seconds=i)
+# 		db.insert_tweet(new_tweet)
 
-ps = PubSub()
+# ps = PubSub()
 
-while True:
-	for row in db.session.query(func.ST_X(centroid), func.ST_Y(centroid)).all():
-		new_tweet = TEST_TWEET.copy()
-		new_tweet["coordinates"]["coordinates"] = list(row)
-		tweet = db.insert_tweet(new_tweet)
-		if tweet is not None:
-			ps.publish(tweet)
-			sleep(1)
+# while True:
+# 	for row in db.session.query(func.ST_X(centroid), func.ST_Y(centroid)).all():
+# 		new_tweet = TEST_TWEET.copy()
+# 		new_tweet["coordinates"]["coordinates"] = list(row)
+# 		new_tweet["created_at"] = datetime.now()
+# 		tweet = db.insert_tweet(new_tweet)
+# 		if tweet is not None:
+# 			ps.publish(tweet)
+# 			sleep(1)

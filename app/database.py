@@ -120,56 +120,52 @@ class Database:
         return map(lambda x: x[0], ids)
 
     '''
-        Get Division Temporal Histogram
-        
-        The queries return an hourly list containing tweet activity throughout
-        the entire hour, and for each division per hour. The analysis is performed for all
-        tweets throughout the past 7 days. It's essentially:
-        
-        with hour_count as (
-            select date_trunc('hour', created_at) as hour,
-            count(*) over (partition by date_trunc('hour', created_at)) as count_all,
-            division_id from tweets.tweets
-            where created_at > now() - interval '1 week'
-        ),
-        select distinct
-            hour,
-            division_id,
-            count_all,
-            count(*) over (partition by division_id, hour) as div_count,
-            from hour_count
-            order by hour desc, division_id;
-            
-        Returns a dictionary with a list of times for the past week with tweets
+    with series as (
+        select * from generate_series(
+        date_trunc('hour', now() - interval '1 week'),
+        now(),
+        interval '1 hour') time
+    ), tw_count as (
+        select distinct date_trunc('hour', created_at) as time,
+        count(*) over (partition by date_trunc('hour', created_at))
+        from tweets.tweets
+        where created_at > now() - interval '1 week'
+        and division_id = 77
+    )
+    select series.time,
+    coalesce(tw_count.count, 0) as count
+    from series
+    left join tw_count on (tw_count.time = series.time);
     '''
-    def get_division_temporal_histogram(self):
-        # Search back 1 week
-        week_ago = datetime.utcnow() - timedelta(days=7)
-        
-        # Truncate the hour
-        hour_f = func.date_trunc('hour', Tweet.created_at)
-        
-        # sq = subquery
-        sq = self.session.query(
-            hour_f.label('hour'),
-            func.count('*').over(partition_by=hour_f).label('count_all'),
-            Tweet.division_id).\
-            filter(Tweet.created_at > week_ago).\
-            subquery()
-        
-        # Use sq.c to access columns
-        result = self.session.query(
-            sq.c.hour,
-            sq.c.division_id,
-            sq.c.count_all,
-            func.count('*').over(partition_by=[sq.c.division_id, sq.c.hour]).label('div_count')).\
-            order_by(sq.c.hour.desc(), sq.c.division_id).\
-            distinct().all()
-        
-        # Format the result
-        histogram = map(lambda x: { "hour": x[0], "division_id": x[1], "count_all": x[2], "div_count": x[3] }, result)
-        return {
-            "startTime": week_ago.strftime("%Y-%m-%d %H:00:00Z"),
-            "data": histogram
-        }
+    def get_tweet_counts_by_division(self, div_id=None):
+        series = self.session.query(
+            func.generate_series(
+            func.date_trunc('hour', datetime.utcnow() - timedelta(hours=24)),
+            datetime.utcnow(),
+            timedelta(hours=1)).label('time')).subquery()
+        tw_count = self.session.query(
+            func.date_trunc('hour', Tweet.created_at).label('time'),
+            func.count('*').over(partition_by=func.date_trunc('hour', Tweet.created_at)).label('count')).\
+            filter(Tweet.created_at > datetime.utcnow() - timedelta(hours=24)).\
+            distinct()
 
+        if div_id != None:
+            tw_count = tw_count.filter(Tweet.division_id == div_id)
+
+        tw_count = tw_count.subquery()
+
+        res = self.session.query(
+            series.c.time,
+            func.coalesce(tw_count.c.count, 0).label('count')).\
+            select_from(series).\
+            outerjoin(tw_count, tw_count.c.time == series.c.time).all()
+
+        return map(lambda x: { "time": x[0].isoformat(), "count": x[1] }, res)
+
+    # Get pictures in extent
+    # Takes in lat/long bounding box and returns pictures that have been taken there in the past week
+    def get_pictures_in_extent(self, sw_lat, sw_long, ne_lat, ne_long):
+        wkt = "SRID=4326;POLYGON(({} {}, {} {}, {} {}, {} {}, {} {}))".format(ne_long, ne_lat, sw_long, ne_lat, sw_long, sw_lat, ne_long, sw_lat, ne_long, ne_lat)
+        pics = self.session.query(Picture).join(Tweet).filter(geo_func.ST_Within(Tweet.geom, wkt)).order_by(Tweet.created_at.desc()).limit(10)
+        return pics
+        

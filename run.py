@@ -20,12 +20,7 @@ def last_tweets():
     
 @application.route("/division/histogram/all")
 def div_histogram_all():
-    res = db.get_division_temporal_histogram()
-    
-    # Cast datetimes to strings
-    for item in res["data"]:
-        item.update((k, str(v)) for k, v in item.iteritems() if k is 'hour')
-        
+    res = db.get_tweet_counts_by_division()        
     return json.dumps(res)
     
 @application.route("/division/histogram/<int:div_id>")
@@ -35,9 +30,22 @@ def div_histogram(div_id):
     if div_id not in div_ids:
         abort(400)
     else:
-        return str(div_id)
+        res = db.get_tweet_counts_by_division(div_id)        
+        return json.dumps(res)
         
-    
+@application.route("/pictures/<sw_long>,<sw_lat>,<ne_long>,<ne_lat>")
+def pictures_in_extent(sw_lat, sw_long, ne_lat, ne_long):
+    try:
+        sw_lat = float(sw_lat)
+        sw_long = float(sw_long)
+        ne_lat = float(ne_lat)
+        ne_long = float(ne_long)
+    except ValueError:
+        abort(400)
+
+    res = db.get_pictures_in_extent(sw_lat, sw_long, ne_lat, ne_long)
+    ser = ser = map(lambda x: x.tweet.serialized, res)
+    return json.dumps(ser)
 
 if __name__ == "__main__":
     application.config['DEBUG'] = config.DEBUG
