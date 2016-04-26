@@ -1,30 +1,37 @@
-var LIVEFEED_URL = "ws://" + window.location.hostname + (window.location.port ? ':' + window.location.port: '') + '/ws/';
+var LIVEFEED_URL = "wss://" + window.location.hostname + (window.location.port ? ':' + window.location.port: '') + 'webgis/ws/';
 var TILE_URL = 'http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
 var STATISTICS_LAYER_URL = 'data/divisions.topojson';
 var HEATMAP_LAYER_URL = 'tweets/heatmap';
 var PICTURES_URL = 'pictures/';
 
+
+// Tweet card component for the live feed
 ko.components.register('tweet-card', {
 	template: { element: 'card-template' },
 	viewModel: function (params) {
 		var self = this;
+
+		// Keep references to the parent map, and tweet data to display
 		this.tweet = params.tweet;
 		this.map = params.root.map;
 
-		// Add a "click" callback to 
+		// Highlight the marker via the map controller when hovered over
 		this.beginHover = function () {
 			 self.map.highlightMarker(self.tweet.marker);
 		};
 
+		// End hightlight via the map controller when mouse out
 		this.endHover = function () {
 			self.map.unhighlightMarker(self.tweet.marker)
 		};
 
+		// Pan to tweet via the map controller when clicked
 		this.panToTweet = function () {
 			self.map.panToMarker(self.tweet.marker);
 			return true;
 		}
 
+		// Zoom to the tweet via the map controller when double clicked
 		this.zoomToTweet = function() {
 			self.map.zoomToMarker(self.tweet.marker);
 			return true;
@@ -38,9 +45,14 @@ function DivStatsViewModel(params) {
 	this.chart = null;
 
 	// Startup Chart
-	// Does a query for the latest 
+	// Does a query for the latest data for the selected division, and either creates the chart
+	// or updates the currently drawn one.
 	this.startupChart = function() {
 		$.getJSON('division/' + self.division().feature.id + '/histogram', function(data) {
+
+			// First thing to do is separate the labels from the count data
+			// The labels will only show every second hour, and midnight for
+			// each day
 			var labels = $.map(data, function(i) {
 				var label = moment.utc(i.time).local();
 				if (label.hours() === 0) {
@@ -56,6 +68,7 @@ function DivStatsViewModel(params) {
 				return i.count;
 			});
 
+			// If no chart already - create a new bar chart
 			if (!self.chart) {
 				self.chart = new Chartist.Bar(
 					'.div-barchart',
@@ -96,32 +109,41 @@ function DivStatsViewModel(params) {
 								}
 							})
 						]
-
-
 					}
-				)
+				);
 			} else {
+				// Update the chart if one exists
 				self.chart.update({labels: labels, series: [count]})
 			}
 		})
 	};
 
+	// Startup the chart on component start
 	this.startupChart();
 
+	// Subscribe to changes to the selected division and redraw the chart
 	this.divSubscription = this.division.subscribe(function(newValue) {
 		self.startupChart();
 	});
 };
 
+
+// Get rid of the subscription when the component is disposed - 
+// happens every time the back arrow on the statistics card is clicked
+// or the user navigates to another layer
 DivStatsViewModel.prototype.dispose = function() {
 	this.divSubscription.dispose();
 }
 
+// Register the component
 ko.components.register('div-stats', {
 	template: { element: 'div-stats' },
 	viewModel: DivStatsViewModel
 });
 
+// Active users view model
+// Queries the endpoint and updates the data by subscribing to the selected
+// division, in the same manner as the chart component
 function ActiveUsersViewModel(params) {
 	var self = this;
 	this.division = params.division;
@@ -130,6 +152,7 @@ function ActiveUsersViewModel(params) {
 	this.day = ko.observable(0);
 	this.week = ko.observable(0);
 
+	// Convert data to localeString for nice formatting
 	this.updateData = function() {
 		$.getJSON('division/' + self.division().feature.id + '/users', function(data) {
 			self.hour(data.hour.toLocaleString());
@@ -279,7 +302,7 @@ function LiveFeed(cb) {
 	// Restart the connection if it closes
 	ws.onclose = function() { 
 		window.setTimeout(function() {
-			new LiveFeed(url, cb);
+			new LiveFeed(cb);
 		}, 1000);
 		cb(null, "Disconnected");
 	};
