@@ -115,3 +115,15 @@ path.leaflet-clickable:hover {
     fill: #FFF;
     stroke: #64b5f6;
 }
+
+.div-barchart {
+    height: 250px;
+}
+
+.ct-bar {
+    stroke: #448AFF !important;
+}
+
+.nomargin {
+    margin: 0px;
+}

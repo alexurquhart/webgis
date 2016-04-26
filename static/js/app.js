@@ -2,8 +2,6 @@ var LIVEFEED_URL = "ws://" + window.location.hostname + (window.location.port ? 
 var TILE_URL = 'http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
 var STATISTICS_LAYER_URL = 'data/divisions.topojson';
 var HEATMAP_LAYER_URL = 'tweets/heatmap';
-var HISTOGRAM_URL = 'division/histogram/all'
-var HISTOGRAM_DIV_URL = 'division/histogram/'
 var PICTURES_URL = 'pictures/';
 
 ko.components.register('tweet-card', {
@@ -39,13 +37,15 @@ function DivStatsViewModel(params) {
 	this.division = params.division;
 	this.chart = null;
 
+	// Startup Chart
+	// Does a query for the latest 
 	this.startupChart = function() {
-		$.getJSON(HISTOGRAM_DIV_URL + self.division().feature.id, function(data) {
+		$.getJSON('division/' + self.division().feature.id + '/histogram', function(data) {
 			var labels = $.map(data, function(i) {
 				var label = moment.utc(i.time).local();
 				if (label.hours() === 0) {
 					return label.format("MMM DD");
-				} else if (label.hours() % 3 == 0) {
+				} else if (label.hours() % 2 == 0) {
 					return label.format("HH");
 				} else {
 					return '';
@@ -67,9 +67,37 @@ function DivStatsViewModel(params) {
 						chartPadding: {
 							top: 0,
 							right: 10,
-							bottom: 0,
+							bottom: 30,
 							left: 0
-						}
+						},
+						axisY: {
+							onlyInteger: true
+						},
+						plugins: [
+							Chartist.plugins.ctAxisTitle({
+								axisX: {
+									axisTitle: 'Hour',
+									axisClass: 'ct-axis-title',
+									offset: {
+										x: 0,
+										y: 40
+									},
+									textAnchor: 'middle'
+								},
+								axisY: {
+									axisTitle: 'Tweets/Hour',
+									axisClass: 'ct-axis-title',
+									offset: {
+										x: 0,
+										y: 0
+									},
+									textAnchor: 'middle',
+									flipTitle: false
+								}
+							})
+						]
+
+
 					}
 				)
 			} else {
@@ -92,6 +120,38 @@ DivStatsViewModel.prototype.dispose = function() {
 ko.components.register('div-stats', {
 	template: { element: 'div-stats' },
 	viewModel: DivStatsViewModel
+});
+
+function ActiveUsersViewModel(params) {
+	var self = this;
+	this.division = params.division;
+
+	this.hour = ko.observable(0);
+	this.day = ko.observable(0);
+	this.week = ko.observable(0);
+
+	this.updateData = function() {
+		$.getJSON('division/' + self.division().feature.id + '/users', function(data) {
+			self.hour(data.hour.toLocaleString());
+			self.day(data.day.toLocaleString());
+			self.week(data.week.toLocaleString());
+		});
+	};
+
+	this.updateData();
+
+	this.divSubscription = this.division.subscribe(function(newValue) {
+		self.updateData();
+	});
+};
+
+ActiveUsersViewModel.prototype.dispose = function() {
+	this.divSubscription.dispose();
+}
+
+ko.components.register('active-users', {
+	template: { element: 'active-users' },
+	viewModel: ActiveUsersViewModel
 });
 
 function MapController() {
@@ -336,7 +396,7 @@ function AppViewModel() {
 	this.checkFeedScroll = function() {
 		// Determine scroll position
 		var pos = $('#cards').scrollTop();
-		if (pos > 0) {
+		if (pos > 0 && self.pane() === 'livefeed') {
 			$('#new-tweets').css({top: pos + 10});
 			self.pauseLiveFeed(true);
 		} else {

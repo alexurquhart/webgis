@@ -18,12 +18,12 @@ def last_tweets():
     ser = map(lambda x: x.serialized, tweets)
     return json.dumps(ser)
     
-@application.route("/division/histogram/all")
+@application.route("/division/all/histogram")
 def div_histogram_all():
     res = db.get_tweet_counts_by_division()        
     return json.dumps(res)
     
-@application.route("/division/histogram/<int:div_id>")
+@application.route("/division/<int:div_id>/histogram")
 def div_histogram(div_id):
     div_ids = db.get_division_ids()
     
@@ -31,6 +31,16 @@ def div_histogram(div_id):
         abort(400)
     else:
         res = db.get_tweet_counts_by_division(div_id)        
+        return json.dumps(res)
+
+@application.route("/division/<int:div_id>/users")
+def div_users(div_id):
+    div_ids = db.get_division_ids()
+    
+    if div_id not in div_ids:
+        abort(400)
+    else:
+        res = db.get_active_users_by_division(div_id)        
         return json.dumps(res)
         
 @application.route("/pictures/<sw_long>,<sw_lat>,<ne_long>,<ne_lat>")

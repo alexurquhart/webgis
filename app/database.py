@@ -162,6 +162,27 @@ class Database:
 
         return map(lambda x: { "time": x[0].isoformat(), "count": x[1] }, res)
 
+    # Returns the number of unique users for a given
+    # division over the past hour, day, and week
+    # TODO: Convert all to one query
+    def get_active_users_by_division(self, div_id):
+        users = self.session.query(Tweet.user_id).\
+        filter(Tweet.division_id == div_id)
+
+        queries = [
+            users.filter(Tweet.created_at > datetime.utcnow() - timedelta(hours=1)).distinct().subquery(),
+            users.filter(Tweet.created_at > datetime.utcnow() - timedelta(hours=24)).distinct().subquery(),
+            users.filter(Tweet.created_at > datetime.utcnow() - timedelta(days=7)).distinct().subquery()
+        ]
+
+        resolved = map(lambda x: self.session.query(func.count(x.c.user_id)).scalar(), queries)
+
+        return {
+            "hour": resolved[0],
+            "day": resolved[1],
+            "week": resolved[2]
+        }
+
     # Get pictures in extent
     # Takes in lat/long bounding box and returns pictures that have been taken there in the past week
     def get_pictures_in_extent(self, sw_lat, sw_long, ne_lat, ne_long):
