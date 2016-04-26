@@ -1,4 +1,4 @@
-var LIVEFEED_URL = "wss://" + window.location.hostname + (window.location.port ? ':' + window.location.port: '') + 'webgis/ws/';
+var LIVEFEED_URL = "wss://" + window.location.hostname + (window.location.port ? ':' + window.location.port: '') + '/webgis/ws/';
 var TILE_URL = 'http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
 var STATISTICS_LAYER_URL = 'data/divisions.topojson';
 var HEATMAP_LAYER_URL = 'tweets/heatmap';
