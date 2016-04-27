@@ -64,26 +64,28 @@ class Database:
     
     # Filter out tweets from blacklisted users            
     def filter(self, tweet):
+        screen_name = tweet["user"]["screen_name"].lower()
+
         for name in config.BLACKLIST_SCREENNAMES_EQ:
-            if tweet.screen_name[0] is name:
+            if screen_name is name:
                 return True
 
         for name in config.BLACKLIST_SCREENNAMES_STARTSWITH:
-            if tweet.screen_name[0].lower().startswith(name.lower()):
+            if screen_name.startswith(name.lower()):
                 return True
-                
+
         for name in config.BLACKLIST_SCREENNAMES_ENDSWITH:
-            if tweet.screen_name[0].lower().endswith(name.lower()):
+            if screen_name.endswith(name.lower()):
                 return True
-                
+
         return False
-    
+
     # Takes a tweet object from the API and inserts it into the database
     def insert_tweet(self, tweet):
-        db_tweet = Tweet(tweet)
-        
-        if self.filter(db_tweet):
+        if self.filter(tweet):
             return
+
+        db_tweet = Tweet(tweet)
         
         # Return if the point does not lie inside one of our divisions
         div = self.get_division(db_tweet.geom)
